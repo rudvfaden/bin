@@ -1,4 +1,4 @@
-# shell script for Advent of Code
+# Shell script for Advent of Code
 Get the input data and initializes a folder and a empty script for the day.
 
 ## Setup
