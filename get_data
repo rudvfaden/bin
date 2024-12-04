@@ -1,0 +1,55 @@
+#!/usr/bin/env python3
+
+import os
+import requests
+from datetime import date
+from dotenv import load_dotenv
+import typer
+from rich.console import Console
+from rich.text import Text
+from typing import Optional
+
+# Load variables from the .env file
+load_dotenv()
+app = typer.Typer()
+console = Console()
+session_id = os.getenv('AOC_SESSION')
+
+@app.command()
+def init_day(day: Optional[int] = None, year: Optional[int] = None) -> None:
+    
+    if day is None:
+        day = date.today().day
+    if year is None:
+        year = date.today().year
+    
+    # creating folder
+    path = f"{year}/day{day}"
+    os.makedirs(path, exist_ok=True)
+
+    # get data
+    url = f'https://adventofcode.com/{year}/day/{day}/input'
+    cookies = {'session': session_id}
+
+    r = requests.get(url, cookies=cookies)
+
+    # create file
+    file_path_program = os.path.join(path, f'day{day}.py')
+    file_path_input = os.path.join(path, 'input.txt')
+    if not os.path.exists(file_path_program):
+        with open(file_path_program, 'w') as file:
+            pass
+        console.print(Text(f"File {file_path_program} created.", style="green"))
+    else:
+        console.print(Text(f"File {file_path_program} already exists; skipping creation.", style="yellow"))
+
+    if not os.path.exists(file_path_input):
+        with open(file_path_input, 'w') as file:
+            file.write(r.text)
+            console.print(Text(f"File {file_path_input} created and data written.", style="green"))
+    else:
+        console.print(Text(f"File {file_path_input} already exists; skipping creation.", style="yellow"))
+
+
+if __name__ == "__main__":
+    app()
