@@ -4,3 +4,4 @@ marquez.txt
 test_date.sh
 .env
 .DS_Store
+__pycache__/*
