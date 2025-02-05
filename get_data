@@ -15,14 +15,13 @@ app = typer.Typer()
 console = Console()
 session_id = os.getenv('AOC_SESSION')
 
+
 @app.command()
 def init_day(day: Optional[int] = None, year: Optional[int] = None) -> None:
-    
     if day is None:
         day = date.today().day
     if year is None:
         year = date.today().year
-    
     # creating folder
     path = f"{year}/day{day}"
     os.makedirs(path, exist_ok=True)
@@ -39,16 +38,35 @@ def init_day(day: Optional[int] = None, year: Optional[int] = None) -> None:
     if not os.path.exists(file_path_program):
         with open(file_path_program, 'w') as file:
             pass
-        console.print(Text(f"File {file_path_program} created.", style="green"))
+        console.print(Text(f"File {file_path_program} created.",
+                           style="green"))
     else:
-        console.print(Text(f"File {file_path_program} already exists; skipping creation.", style="yellow"))
-
+        console.print(
+            Text(f"File {file_path_program} already exists; skipping creation.", # noqa
+                 style="yellow")
+        )
+        if not os.path.exists(file_path_program):
+            with open(file_path_program, 'w') as file:
+                pass
+            console.print(
+                Text(f"File {file_path_program} created.", style="green")
+            )
+        else:
+            console.print(
+                Text(
+                    f"File {file_path_program} already exists; skipping creation.", # noqa
+                    style="yellow"
+                )
+            )
     if not os.path.exists(file_path_input):
         with open(file_path_input, 'w') as file:
             file.write(r.text)
-            console.print(Text(f"File {file_path_input} created and data written.", style="green"))
+            console.print(Text(
+                f"File {file_path_input} created and data written.",
+                style="green"))
     else:
-        console.print(Text(f"File {file_path_input} already exists; skipping creation.", style="yellow"))
+        console.print(Text(f"File {file_path_input} already exists; \
+            skipping creation.", style="yellow"))
 
 
 if __name__ == "__main__":
