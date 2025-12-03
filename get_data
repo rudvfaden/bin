@@ -8,52 +8,136 @@ import typer
 from rich.console import Console
 from rich.text import Text
 from typing import Optional
+from pathlib import Path
 
 # Load variables from the .env file
 load_dotenv()
 app = typer.Typer()
 console = Console()
-session_id = os.getenv('AOC_SESSION')
+
+# --- Constants ---
+AOC_BASE_URL = "https://adventofcode.com"
+
+
+# --- Helper Functions ---
+
+def _get_session_id() -> str:
+    """
+    Retrieves the Advent of Code session ID from environment variables.
+    Exits with an error if the session ID is not found.
+    """
+    session_id = os.getenv("AOC_SESSION")
+    if not session_id:
+        console.print(
+            Text(
+                "Error: AOC_SESSION environment variable not found.",
+                style="bold red",
+            )
+        )
+        console.print(
+            "Please create a .env file and add your session cookie: "
+            "AOC_SESSION='your_session_cookie_here'"
+        )
+        raise typer.Exit(code=1)
+    return session_id
+
+
+def _fetch_aoc_data(year: int, day: int, session_id: str) -> Optional[str]:
+    """
+    Fetches the input data for a given day and year from Advent of Code.
+    Returns the data as a string, or None if an error occurs.
+    """
+    url = f"{AOC_BASE_URL}/{year}/day/{day}/input"
+    cookies = {"session": session_id}
+
+    try:
+        response = requests.get(url, cookies=cookies, timeout=5)
+        response.raise_for_status()  # Raises an HTTPError for bad responses (4xx or 5xx)
+        return response.text
+    except requests.exceptions.RequestException as e:
+        console.print(Text(f"Error fetching data: {e}", style="bold red"))
+        if hasattr(e, "response") and e.response is not None:
+            if e.response.status_code == 404:
+                console.print(
+                    "The puzzle for this day may not be available yet.", style="yellow"
+                )
+            elif e.response.status_code in [401, 403]:
+                console.print(
+                    "Check if your AOC_SESSION cookie is correct and not expired.",
+                    style="yellow",
+                )
+        return None
 
 
 @app.command()
-def init_day(day: Optional[int] = None, year: Optional[int] = None) -> None:
-    if day is None:
-        day = date.today().day
-    if year is None:
-        year = date.today().year
-    # creating folder
-    path = f"{year}/day{day}"
-    os.makedirs(path, exist_ok=True)
+def init_day(
+    day: Optional[int] = typer.Option(
+        None, help="The day of the puzzle (1-24). Defaults to the current day."
+    ),
+    year: Optional[int] = typer.Option(
+        None, help="The year of the puzzle. Defaults to the current year."
+    ),
+) -> None:
+    """
+    Initializes a new folder for an Advent of Code puzzle,
+    downloads the input data, and creates a boilerplate Python file.
+    """
+    today = date.today()
+    resolved_day = day if day is not None else today.day
+    resolved_year = year if year is not None else today.year
 
-    # get data
-    url = f'https://adventofcode.com/{year}/day/{day}/input'
-    cookies = {'session': session_id or ''}
+    # Validate the final day value
+    if not 1 <= resolved_day <= 24:
+        console.print(
+            f"Error: Day ({resolved_day}) must be between 1 and 24.",
+            style="bold red",
+        )
+        raise typer.Exit(code=1)
 
-    r = requests.get(url, cookies=cookies)
+    console.print(
+        f"Initializing setup for [bold cyan]{resolved_year}/day{resolved_day}[/]..."
+    )
 
-    # create file
-    file_path_program = os.path.join(path, f'day{day}.py')
-    file_path_input = os.path.join(path, 'input.txt')
-    if not os.path.exists(file_path_program):
-        with open(file_path_program, 'w') as file:
-            pass
-        console.print(Text(f"File {file_path_program} created.",
-                           style="green"))
+    session_id = _get_session_id()
+
+    # Create folder structure
+    path = Path(f"{resolved_year}/day{resolved_day}")
+    path.mkdir(parents=True, exist_ok=True)
+
+    # Create boilerplate program file
+    file_path_program = path / f"day{resolved_day}.py"
+    if not file_path_program.exists():
+        file_path_program.touch()
+        console.print(Text(f"File {file_path_program} created.", style="green"))
     else:
         console.print(
-            Text(f"File {file_path_program} already exists; skipping creation.", # noqa
-                 style="yellow")
+            Text(
+                f"File {file_path_program} already exists; skipping creation.",
+                style="yellow",
+            )
         )
-        
-    if not os.path.exists(file_path_input):
-        with open(file_path_input, 'w') as file:
-            file.write(r.text)
-            console.print(Text(
-                f"File {file_path_input} created and data written.",
-                style="green"))
+
+    # Fetch data and create input file
+    file_path_input = path / "input.txt"
+    if not file_path_input.exists():
+        data = _fetch_aoc_data(resolved_year, resolved_day, session_id)
+        if data:
+            file_path_input.write_text(data.strip())
+            console.print(
+                Text(
+                    f"File {file_path_input} created and data written.",
+                    style="green",
+                )
+            )
     else:
-        console.print(Text(f"File {file_path_input} already exists skipping creation.", style="yellow"))
+        console.print(
+            Text(
+                f"File {file_path_input} already exists; skipping creation.",
+                style="yellow",
+            )
+        )
+
+    console.print("[bold green]Setup complete![/]")
 
 
 if __name__ == "__main__":
