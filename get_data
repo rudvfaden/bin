@@ -28,7 +28,7 @@ def init_day(day: Optional[int] = None, year: Optional[int] = None) -> None:
 
     # get data
     url = f'https://adventofcode.com/{year}/day/{day}/input'
-    cookies = {'session': session_id}
+    cookies = {'session': session_id or ''}
 
     r = requests.get(url, cookies=cookies)
 
@@ -45,19 +45,7 @@ def init_day(day: Optional[int] = None, year: Optional[int] = None) -> None:
             Text(f"File {file_path_program} already exists; skipping creation.", # noqa
                  style="yellow")
         )
-        if not os.path.exists(file_path_program):
-            with open(file_path_program, 'w') as file:
-                pass
-            console.print(
-                Text(f"File {file_path_program} created.", style="green")
-            )
-        else:
-            console.print(
-                Text(
-                    f"File {file_path_program} already exists; skipping creation.", # noqa
-                    style="yellow"
-                )
-            )
+        
     if not os.path.exists(file_path_input):
         with open(file_path_input, 'w') as file:
             file.write(r.text)
@@ -65,8 +53,7 @@ def init_day(day: Optional[int] = None, year: Optional[int] = None) -> None:
                 f"File {file_path_input} created and data written.",
                 style="green"))
     else:
-        console.print(Text(f"File {file_path_input} already exists; \
-            skipping creation.", style="yellow"))
+        console.print(Text(f"File {file_path_input} already exists skipping creation.", style="yellow"))
 
 
 if __name__ == "__main__":
