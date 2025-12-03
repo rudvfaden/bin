@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import os
-import requests
 from datetime import date
 from dotenv import load_dotenv
 import typer
@@ -14,6 +13,19 @@ from pathlib import Path
 load_dotenv()
 app = typer.Typer()
 console = Console()
+
+# --- Dependency Check ---
+try:
+    import requests
+except ImportError:
+    console.print(
+        "Error: The 'requests' package is required but not installed.",
+        style="bold red",
+    )
+    console.print(
+        "Please install it by running: [bold cyan]pip install requests[/bold cyan]"
+    )
+    raise typer.Exit(code=1)
 
 # --- Constants ---
 AOC_BASE_URL = "https://adventofcode.com"
